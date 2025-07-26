@@ -306,18 +306,53 @@ export class BHRFileRouter {
       switch (method.toUpperCase()) {
         case "GET":
           this.app.get(path, handler);
+          if (this.options.verbose) {
+            console.log(
+              `🔗 Registered GET route: ${path} ${
+                route.isDynamic ? "(dynamic)" : "(static)"
+              }`
+            );
+          }
           break;
         case "POST":
           this.app.post(path, handler);
+          if (this.options.verbose) {
+            console.log(
+              `🔗 Registered POST route: ${path} ${
+                route.isDynamic ? "(dynamic)" : "(static)"
+              }`
+            );
+          }
           break;
         case "PUT":
           this.app.put(path, handler);
+          if (this.options.verbose) {
+            console.log(
+              `🔗 Registered PUT route: ${path} ${
+                route.isDynamic ? "(dynamic)" : "(static)"
+              }`
+            );
+          }
           break;
         case "DELETE":
           this.app.delete(path, handler);
+          if (this.options.verbose) {
+            console.log(
+              `🔗 Registered DELETE route: ${path} ${
+                route.isDynamic ? "(dynamic)" : "(static)"
+              }`
+            );
+          }
           break;
         case "PATCH":
           this.app.patch(path, handler);
+          if (this.options.verbose) {
+            console.log(
+              `🔗 Registered PATCH route: ${path} ${
+                route.isDynamic ? "(dynamic)" : "(static)"
+              }`
+            );
+          }
           break;
       }
     }

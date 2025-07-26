@@ -4,15 +4,16 @@ import { renderToString } from "react-dom/server";
 import { createElement } from "react";
 import { gzipSync } from "bun";
 
-// 🚀 Import du file router BHR
-import { createFileRouter } from "./lib/file-router";
-
-// Import des pages React (fallback si file router échoue)
+// 🚀 Import des pages React
 import HomePage from "../app/(pages)/page";
 import AboutPage from "../app/(pages)/about/page";
+import UsersPage from "../app/(pages)/users/page";
+import UserPage from "../app/(pages)/users/[id]/page";
 
-// Import des routes API (fallback)
+// Import des routes API
 import helloRoute from "../app/api/hello/route";
+import usersRoute from "../app/api/users/route";
+import userByIdRoute from "../app/api/users/[id]/route";
 
 const app = new Hono();
 
@@ -97,50 +98,71 @@ function getCompressionThreshold(contentType: string): number {
   return 1024; // Défaut
 }
 
-// 🚀 Initialisation du File Router BHR
-async function initializeFileRouter() {
-  try {
-    console.log("🔍 Scanning file-based routes...");
+// 🚀 Configuration des routes manuelles
+function setupRoutes() {
+  console.log("🔧 Setting up manual routes...");
 
-    const fileRouter = await createFileRouter(app, {
-      pagesDir: "./app/(pages)",
-      apiDir: "./app/api",
-      extensions: [".ts", ".tsx", ".js", ".jsx"],
-      enableHotReload: process.env.NODE_ENV === "development",
-      verbose: true,
-    });
+  // 📄 Routes de pages avec SSR
+  setupPageRoutes();
 
-    console.log("✅ File-based routing initialized successfully");
-    return fileRouter;
-  } catch (error) {
-    console.error("❌ File router initialization failed:", error);
-    console.log("🔄 Falling back to manual routes...");
+  // 🔗 Routes API
+  setupApiRoutes();
 
-    // Fallback vers les routes manuelles
-    setupFallbackRoutes();
-    return null;
-  }
+  console.log("✅ All manual routes configured");
 }
 
-// 🔄 Routes de fallback en cas d'échec du file router
-function setupFallbackRoutes() {
-  console.log("🔧 Setting up fallback routes...");
+// 📄 Configuration des routes de pages
+function setupPageRoutes() {
+  // Page d'accueil
+  app.get("/", async (c) => {
+    const pageElement = createElement(HomePage);
+    const content = renderToString(pageElement);
+    const html = htmlTemplate(content, "BHR Framework - Home", "/");
+    return c.html(html);
+  });
 
-  // Routes API de fallback
+  // Page à propos
+  app.get("/about", async (c) => {
+    const pageElement = createElement(AboutPage);
+    const content = renderToString(pageElement);
+    const html = htmlTemplate(content, "BHR Framework - About", "/about");
+    return c.html(html);
+  });
+
+  // Page utilisateurs
+  app.get("/users", async (c) => {
+    const pageElement = createElement(UsersPage);
+    const content = renderToString(pageElement);
+    const html = htmlTemplate(content, "BHR Framework - Users", "/users");
+    return c.html(html);
+  });
+
+  // Page utilisateur dynamique
+  app.get("/users/:id", async (c) => {
+    const id = c.req.param("id");
+    const pageElement = createElement(UserPage, { params: { id } });
+    const content = renderToString(pageElement);
+    const html = htmlTemplate(
+      content,
+      `BHR Framework - User ${id}`,
+      `/users/${id}`
+    );
+    return c.html(html);
+  });
+}
+
+// 🔗 Configuration des routes API
+function setupApiRoutes() {
+  // Route API hello
   app.route("/api/hello", helloRoute);
 
-  // Routes de pages de fallback
-  setupFallbackPageRoutes();
-
-  console.log("✅ All fallback routes configured");
+  // Routes API users
+  app.route("/api/users", usersRoute);
+  app.route("/api/users/:id", userByIdRoute);
 }
 
-// 🎨 Template HTML ultra-optimisé avec métriques et preload intelligent
-const htmlTemplate = (
-  content: string,
-  title: string = "BHR App",
-  route: string = "/"
-) => {
+// 🎨 Template HTML optimisé
+function htmlTemplate(content: string, title: string, route: string): string {
   const timestamp = Date.now();
   const buildId = `bhr-${timestamp}`;
 
@@ -254,42 +276,17 @@ const htmlTemplate = (
   </script>
 </body>
 </html>`;
-};
-
-// 🔄 Ajouter les routes de pages de fallback à la fonction
-function setupFallbackPageRoutes() {
-  console.log("🔧 Setting up fallback page routes...");
-
-  // 🏠 Route pour la page d'accueil
-  app.get("/", (c) => {
-    try {
-      const html = renderToString(createElement(HomePage));
-      return c.html(htmlTemplate(html, "Accueil - BHR", "/"));
-    } catch (error) {
-      console.error("Erreur lors du rendu de la page d'accueil:", error);
-      return c.html(
-        htmlTemplate("<h1>Erreur de rendu</h1>", "Erreur - BHR", "/")
-      );
-    }
-  });
-
-  // 📄 Route pour la page About
-  app.get("/about", (c) => {
-    try {
-      const html = renderToString(createElement(AboutPage));
-      return c.html(htmlTemplate(html, "À propos - BHR", "/about"));
-    } catch (error) {
-      console.error("Erreur lors du rendu de la page About:", error);
-      return c.html(
-        htmlTemplate("<h1>Erreur de rendu</h1>", "Erreur - BHR", "/about")
-      );
-    }
-  });
-
-  console.log("✅ Fallback page routes configured");
 }
 
-// � Middleware pour les fichiers statiques (priorité basse)
+// 🚀 Initialisation du serveur BHR
+const port = 3000;
+console.log(`🚀 Serveur BHR démarré sur http://localhost:${port}`);
+console.log(`📁 Architecture unifiée : Hono + React SSR`);
+
+// Configurer les routes manuelles
+setupRoutes();
+
+// 📊 Middleware pour les fichiers statiques (priorité basse)
 app.use(
   "/*",
   serveStatic({
@@ -303,20 +300,7 @@ app.use(
 
 app.use("/favicon.ico", serveStatic({ path: "./public/favicon.ico" }));
 
-// �🚀 Démarrage du serveur
-// 🚀 Initialisation du file router au démarrage
-const port = 3000;
-console.log(`🚀 Serveur BHR démarré sur http://localhost:${port}`);
-console.log(`📁 Architecture unifiée : Hono + React SSR`);
-
-// Initialiser le file router de manière asynchrone
-initializeFileRouter()
-  .then(() => {
-    console.log(`✅ Serveur prêt et en écoute sur le port ${port}`);
-  })
-  .catch((error) => {
-    console.error("❌ Erreur lors de l'initialisation du file router:", error);
-  });
+console.log(`✅ Serveur prêt et en écoute sur le port ${port}`);
 
 // Exports pour le file router
 export { htmlTemplate };
