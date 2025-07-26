@@ -1,0 +1,28 @@
+{
+  "name": "bhr",
+  "version": "1.0.0",
+  "description": "BHR - Bun + Hono + React (Unified Architecture)",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run build:client && bun run --watch src/server.ts",
+    "build": "bun run build:client && bun run build:server",
+    "build:client": "bun build src/client.tsx --outdir=dist/public --format=esm --target=browser --minify --sourcemap=none --tree-shaking",
+    "build:server": "bun build src/server.ts --outdir=dist --target=bun --minify",
+    "start": "bun dist/server.js",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "optimize": "bun scripts/optimize.ts",
+    "analyze": "bun build src/client.tsx --outdir=dist/public --splitting --format=esm --target=browser --minify --analyze"
+  },
+  "dependencies": {
+    "hono": "^4.7.11",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "typescript": "^5.7.3"
+  }
+}
